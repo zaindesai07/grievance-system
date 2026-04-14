@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <style>
+        body {
+            font-family: Arial;
+            margin: 0;
+            background: linear-gradient(to right, #667eea, #764ba2);
+        }
+
+        .navbar {
+            background: #222;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 20px;
+        }
+
+        .container {
+            width: 90%;
+            margin: auto;
+        }
+
+        #map {
+            height: 300px;
+            margin: 20px 0;
+            border-radius: 10px;
+        }
+
+        .card {
+            background: white;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .buttons button {
+            margin: 5px;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            color: white;
+        }
+
+        .pending { background: orange; }
+        .progress { background: blue; }
+        .resolved { background: green; }
+
+     
+
+        img {
+            margin-top: 10px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="navbar">
+    🚨 Grievance Dashboard
+</div>
+
+<div class="container">
+
+    <div style="display:flex; gap:20px; flex-wrap:wrap; margin-top:20px;">
+
+    <div style="background:white; padding:15px; border-radius:10px;">
+        <b>Total:</b> {{ total }}
+    </div>
+
+    <div style="background:orange; padding:15px; border-radius:10px; color:white;">
+        <b>Pending:</b> {{ pending }}
+    </div>
+
+    <div style="background:blue; padding:15px; border-radius:10px; color:white;">
+        <b>In Progress:</b> {{ progress }}
+    </div>
+
+    <div style="background:green; padding:15px; border-radius:10px; color:white;">
+        <b>Resolved:</b> {{ resolved }}
+    </div>
+
+</div>
+
+    <!-- Map -->
+    <div id="map"></div>
+
+    <!-- Cards -->
+    {% for c in complaints %}
+    <div class="card">
+        <p><b>Description:</b> {{ c.description }}</p>
+        <p><b>Location:</b> {{ c.location or "Not Provided" }}</p>
+        <p><b>Status:</b> {{ c.status }}</p>
+
+        {% if c.image %}
+            <img src="{{ c.image }}" width="200">
+        {% endif %}
+
+        <div class="buttons">
+            <a href="/update_status/{{ c.id }}/Pending">
+                <button class="pending">Pending</button>
+            </a>
+
+            <a href="/update_status/{{ c.id }}/In Progress">
+                <button class="progress">In Progress</button>
+            </a>
+
+            <a href="/update_status/{{ c.id }}/Resolved">
+                <button class="resolved">Resolved</button>
+            </a>
+
+            <a href="/delete/{{ c.id }}" onclick="return confirm('Are you sure?')">
+    <button style="background:red;">Delete</button>
+</a>
+
+        </div>
+    </div>
+    {% endfor %}
+
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+    var map = L.map('map').setView([19.0760, 72.8777], 12);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: "Map data © OpenStreetMap contributors"
+    }).addTo(map);
+
+    // FIXED LINE (no editor errors)
+    var complaints = JSON.parse('{{ complaints | tojson | safe }}');
+
+    complaints.forEach(function(c) {
+        if (c.location) {
+            var coords = c.location.split(",");
+
+            if (coords.length === 2) {
+                var lat = parseFloat(coords[0]);
+                var lng = parseFloat(coords[1]);
+
+                L.marker([lat, lng]).addTo(map)
+                    .bindPopup("<b>" + c.description + "</b>");
+            }
+        }
+    });
+</script>
+
+</body>
+</html>

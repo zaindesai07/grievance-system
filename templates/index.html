@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Grievance System</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f5f7fa;
+        }
+
+        .container {
+            width: 400px;
+            margin: 50px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        textarea, input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 10px;
+            padding: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        a {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+    <h2>Report Issue</h2>
+
+    <form action="/submit" method="POST" enctype="multipart/form-data">
+
+        <textarea name="description" placeholder="Describe issue"></textarea>
+
+        <input type="file" name="image">
+
+        <input type="text" name="location" id="location" placeholder="Location">
+
+        <button type="button" onclick="getLocation()">Get Location</button>
+
+        <button type="submit">Submit</button>
+
+    </form>
+
+    <a href="/dashboard">View Complaints</a>
+</div>
+
+<script>
+function getLocation() {
+    navigator.geolocation.getCurrentPosition(function(pos) {
+        document.getElementById("location").value =
+            pos.coords.latitude + "," + pos.coords.longitude;
+    });
+}
+</script>
+
+</body>
+</html>
