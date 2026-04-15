@@ -59,13 +59,27 @@ def home():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        user = User(
-            username=request.form['username'],
-            password=request.form['password']
-        )
-        db.session.add(user)
-        db.session.commit()
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        # check empty
+        if not username or not password:
+            return "Please fill all fields"
+
+        # check if user exists
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
+            return "User already exists"
+
+        try:
+            user = User(username=username, password=password)
+            db.session.add(user)
+            db.session.commit()
+        except Exception as e:
+            return f"Error: {str(e)}"
+
         return redirect('/login')
+
     return render_template('register.html')
 
 # LOGIN
