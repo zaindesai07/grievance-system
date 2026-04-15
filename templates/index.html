@@ -1,91 +1,129 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Grievance System</title>
+    <title>Report Issue</title>
 
     <style>
         body {
             font-family: Arial;
-            background: #f5f7fa;
+            background: #f5f7fb;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
 
-        .container {
-            width: 400px;
-            margin: 50px auto;
+        .form-box {
             background: white;
-            padding: 20px;
+            padding: 30px;
             border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            width: 350px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
         }
 
-        h2 {
-            text-align: center;
-        }
-
-        textarea, input {
+        input, textarea {
             width: 100%;
+            margin-bottom: 10px;
             padding: 10px;
-            margin-top: 10px;
             border-radius: 5px;
             border: 1px solid #ccc;
         }
 
         button {
             width: 100%;
-            margin-top: 10px;
             padding: 10px;
-            background: #007bff;
+            background: #6366f1;
             color: white;
             border: none;
             border-radius: 5px;
-            cursor: pointer;
         }
 
         a {
             display: block;
             text-align: center;
-            margin-top: 15px;
+            margin-top: 10px;
         }
     </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="form-box">
     <h2>Report Issue</h2>
 
     <form action="/submit" method="POST" enctype="multipart/form-data">
-
         <textarea name="description" placeholder="Describe issue"></textarea>
-
+        <input type="text" name="location" placeholder="Location">
         <input type="file" name="image">
-
-        <input type="text" name="location" id="location" placeholder="Location">
-
-        <button type="button" onclick="getLocation()">Get Location</button>
-
         <button type="submit">Submit</button>
-
     </form>
-<a href="/register">
-    <button>Register</button>
-</a>
 
-<a href="/login">
-    <button>Login</button>
-</a>
     <a href="/dashboard">View Complaints</a>
 </div>
 
-<script>
-function getLocation() {
-    navigator.geolocation.getCurrentPosition(function(pos) {
-        document.getElementById("location").value =
-            pos.coords.latitude + "," + pos.coords.longitude;
-    });
-}
-</script>
+</body>
+</html><!DOCTYPE html>
+<html>
+<head>
+    <title>Report Issue</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f5f7fb;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .form-box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 350px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        input, textarea {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #6366f1;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        a {
+            display: block;
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="form-box">
+    <h2>Report Issue</h2>
+
+    <form action="/submit" method="POST" enctype="multipart/form-data">
+        <textarea name="description" placeholder="Describe issue"></textarea>
+        <input type="text" name="location" placeholder="Location">
+        <input type="file" name="image">
+        <button type="submit">Submit</button>
+    </form>
+
+    <a href="/dashboard">View Complaints</a>
+</div>
 
 </body>
 </html>
-

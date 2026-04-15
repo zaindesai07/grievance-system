@@ -3,61 +3,68 @@
 <head>
     <title>Dashboard</title>
 
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-
     <style>
         body {
             font-family: Arial;
+            background: #f5f7fb;
             margin: 0;
-            background: linear-gradient(to right, #667eea, #764ba2);
         }
 
         .navbar {
-            background: #222;
+            background: #1e293b;
             color: white;
             padding: 15px;
-            text-align: center;
-            font-size: 20px;
+            display: flex;
+            justify-content: space-between;
         }
 
         .container {
-            width: 90%;
-            margin: auto;
+            padding: 20px;
         }
 
-        #map {
-            height: 300px;
-            margin: 20px 0;
-            border-radius: 10px;
+        .stats {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
         }
 
-        .card {
-            background: white;
+        .card-box {
+            flex: 1;
             padding: 15px;
-            margin: 15px 0;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-
-        .buttons button {
-            margin: 5px;
-            padding: 8px 12px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
+            border-radius: 10px;
             color: white;
         }
 
-        .pending { background: orange; }
-        .progress { background: blue; }
-        .resolved { background: green; }
+        .total { background: #6366f1; }
+        .pending { background: #f59e0b; }
+        .progress { background: #3b82f6; }
+        .resolved { background: #10b981; }
 
-     
+        .complaint {
+            background: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .btn {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+
+        .pending-btn { background: orange; color: white; }
+        .progress-btn { background: blue; color: white; }
+        .resolved-btn { background: green; color: white; }
+        .delete-btn { background: red; color: white; }
 
         img {
+            max-width: 200px;
             margin-top: 10px;
-            border-radius: 6px;
+            border-radius: 8px;
         }
     </style>
 </head>
@@ -65,95 +72,52 @@
 <body>
 
 <div class="navbar">
-    🚨 Grievance Dashboard
+    <h2>Grievance Dashboard</h2>
+    <a href="/logout" style="color:white;">Logout</a>
 </div>
 
 <div class="container">
 
-    <div style="display:flex; gap:20px; flex-wrap:wrap; margin-top:20px;">
-
-    <div style="background:white; padding:15px; border-radius:10px;">
-        <b>Total:</b> {{ total }}
+    <!-- STATS -->
+    <div class="stats">
+        <div class="card-box total">Total: {{ total }}</div>
+        <div class="card-box pending">Pending: {{ pending }}</div>
+        <div class="card-box progress">In Progress: {{ progress }}</div>
+        <div class="card-box resolved">Resolved: {{ resolved }}</div>
     </div>
 
-    <div style="background:orange; padding:15px; border-radius:10px; color:white;">
-        <b>Pending:</b> {{ pending }}
-    </div>
-
-    <div style="background:blue; padding:15px; border-radius:10px; color:white;">
-        <b>In Progress:</b> {{ progress }}
-    </div>
-
-    <div style="background:green; padding:15px; border-radius:10px; color:white;">
-        <b>Resolved:</b> {{ resolved }}
-    </div>
-
-</div>
-
-    <!-- Map -->
-    <div id="map"></div>
-
-    <!-- Cards -->
+    <!-- COMPLAINTS -->
     {% for c in complaints %}
-    <div class="card">
-        <p><b>Description:</b> {{ c.description }}</p>
-        <p><b>Location:</b> {{ c.location or "Not Provided" }}</p>
-        <p><b>Status:</b> {{ c.status }}</p>
+    <div class="complaint">
+        <b>Description:</b> {{ c.description }} <br>
+        <b>Location:</b> {{ c.location }} <br>
+        <b>Status:</b> {{ c.status }}
 
         {% if c.image %}
-            <img src="{{ c.image }}" width="200">
+        <br><img src="{{ c.image }}">
         {% endif %}
 
-        <div class="buttons">
-            <a href="/update_status/{{ c.id }}/Pending">
-                <button class="pending">Pending</button>
-            </a>
+        <br><br>
 
-            <a href="/update_status/{{ c.id }}/In Progress">
-                <button class="progress">In Progress</button>
-            </a>
+        <a href="/update_status/{{ c.id }}/Pending">
+            <button class="btn pending-btn">Pending</button>
+        </a>
 
-            <a href="/update_status/{{ c.id }}/Resolved">
-                <button class="resolved">Resolved</button>
-            </a>
+        <a href="/update_status/{{ c.id }}/In Progress">
+            <button class="btn progress-btn">Progress</button>
+        </a>
 
-            <a href="/delete/{{ c.id }}" onclick="return confirm('Are you sure?')">
-    <button style="background:red;">Delete</button>
-</a>
+        <a href="/update_status/{{ c.id }}/Resolved">
+            <button class="btn resolved-btn">Resolved</button>
+        </a>
 
-        </div>
+        <a href="/delete/{{ c.id }}">
+            <button class="btn delete-btn">Delete</button>
+        </a>
     </div>
     {% endfor %}
 
 </div>
-
-<!-- Leaflet JS -->
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
-<script>
-    var map = L.map('map').setView([19.0760, 72.8777], 12);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: "Map data © OpenStreetMap contributors"
-    }).addTo(map);
-
-    // FIXED LINE (no editor errors)
-    var complaints = JSON.parse('{{ complaints | tojson | safe }}');
-
-    complaints.forEach(function(c) {
-        if (c.location) {
-            var coords = c.location.split(",");
-
-            if (coords.length === 2) {
-                var lat = parseFloat(coords[0]);
-                var lng = parseFloat(coords[1]);
-
-                L.marker([lat, lng]).addTo(map)
-                    .bindPopup("<b>" + c.description + "</b>");
-            }
-        }
-    });
-</script>
 
 </body>
 </html>

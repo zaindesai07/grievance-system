@@ -2,30 +2,30 @@ from flask import Flask, render_template, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 import os
 
-# LOGIN IMPORTS
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 
-# CLOUDINARY IMPORTS
+from werkzeug.security import generate_password_hash, check_password_hash
+
 import cloudinary
 import cloudinary.uploader
 
 app = Flask(__name__)
 app.secret_key = "secret123"
 
-# DATABASE CONFIG
+# ---------------- DATABASE ----------------
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(os.getcwd(), 'database.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# ---------------- CLOUDINARY CONFIG ----------------
+# ---------------- CLOUDINARY ----------------
 cloudinary.config(
     cloud_name="drwksgzy5",
     api_key="781717963747153",
     api_secret="zprcBCc92QwTVnt6-u4LeE-Y-n0"
 )
 
-# ---------------- LOGIN SETUP ----------------
+# ---------------- LOGIN ----------------
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -38,8 +38,8 @@ def load_user(user_id):
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), unique=True)
-    password = db.Column(db.String(50))
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)
 
 class Complaint(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -48,75 +48,93 @@ class Complaint(db.Model):
     image = db.Column(db.String(200))
     status = db.Column(db.String(50), default="Pending")
 
+    # 🔥 USER LINK
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
 # ---------------- ROUTES ----------------
 
-# HOME
+# HOME → SMART FLOW
 @app.route('/')
 def home():
-    return render_template('index.html')
+    if current_user.is_authenticated:
+        return render_template('index.html')
+    return redirect('/register')
 
-# REGISTER
+# ---------------- REGISTER ----------------
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
 
-        # check empty
         if not username or not password:
             return "Please fill all fields"
 
-        # check if user exists
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
             return "User already exists"
 
         try:
-            user = User(username=username, password=password)
+            # 🔐 HASH PASSWORD
+            hashed_password = generate_password_hash(password)
+
+            user = User(username=username, password=hashed_password)
             db.session.add(user)
             db.session.commit()
+
+            # 🔥 AUTO LOGIN
+            login_user(user)
+            return redirect('/')
+
         except Exception as e:
             return f"Error: {str(e)}"
 
-        return redirect('/login')
-
     return render_template('register.html')
 
-# LOGIN
+# ---------------- LOGIN ----------------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        user = User.query.filter_by(username=request.form['username']).first()
+        user = User.query.filter_by(username=request.form.get('username')).first()
 
-        if user and user.password == request.form['password']:
+        # 🔐 CHECK HASH
+        if user and check_password_hash(user.password, request.form.get('password')):
             login_user(user)
-            return redirect('/dashboard')
+            return redirect('/')
         else:
             return "Invalid credentials"
 
     return render_template('login.html')
 
-# LOGOUT
+# ---------------- LOGOUT ----------------
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
     return redirect('/login')
 
-# SUBMIT COMPLAINT
+# ---------------- SUBMIT ----------------
 @app.route('/submit', methods=['POST'])
+@login_required
 def submit():
-    desc = request.form['description']
-    location = request.form['location']
+    desc = request.form.get('description')
+    location = request.form.get('location')
 
-    file = request.files['image']
-    result = cloudinary.uploader.upload(file)
-    image_url = result['secure_url']
+    image_url = None
+
+    file = request.files.get('image')
+    if file and file.filename != "":
+        try:
+            result = cloudinary.uploader.upload(file)
+            image_url = result['secure_url']
+        except:
+            image_url = None
 
     new_complaint = Complaint(
         description=desc,
         location=location,
-        image=image_url
+        image=image_url,
+        user_id=current_user.id   # 🔥 USER LINK
     )
 
     db.session.add(new_complaint)
@@ -124,22 +142,21 @@ def submit():
 
     return redirect('/')
 
-# DASHBOARD
+# ---------------- DASHBOARD ----------------
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    complaints = Complaint.query.all()
+    # 🔥 ONLY USER DATA
+    complaints = Complaint.query.filter_by(user_id=current_user.id).all()
 
     complaints_data = []
 
-    # COUNTS
     total = len(complaints)
     pending = 0
     progress = 0
     resolved = 0
 
     for c in complaints:
-        # convert to dict
         complaints_data.append({
             "id": c.id,
             "description": c.description,
@@ -148,7 +165,6 @@ def dashboard():
             "image": c.image
         })
 
-        # counting
         if c.status == "Pending":
             pending += 1
         elif c.status == "In Progress":
@@ -165,24 +181,37 @@ def dashboard():
         resolved=resolved
     )
 
-# DELETE COMPLAINT
+# ---------------- UPDATE STATUS ----------------
+@app.route('/update_status/<int:id>/<status>')
+@login_required
+def update_status(id, status):
+    complaint = Complaint.query.get(id)
+
+    if complaint and complaint.user_id == current_user.id:
+        complaint.status = status
+        db.session.commit()
+
+    return redirect('/dashboard')
+
+# ---------------- DELETE ----------------
 @app.route('/delete/<int:id>')
 @login_required
 def delete_complaint(id):
     complaint = Complaint.query.get(id)
 
-    if complaint:
+    if complaint and complaint.user_id == current_user.id:
         db.session.delete(complaint)
         db.session.commit()
 
     return redirect('/dashboard')
 
-# ---------------- RUN APP (ALWAYS LAST) ----------------
+# ---------------- INIT DB ----------------
 @app.route('/initdb')
 def initdb():
     db.create_all()
     return "Database created!"
 
+# ---------------- RUN ----------------
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
