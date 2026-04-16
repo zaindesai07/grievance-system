@@ -43,7 +43,7 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(50), nullable=False)
-    role = db.Column(db.String(20), default="user")  # NEW
+    role = db.Column(db.String(20), default="user")   # ✅ ADD THIS
 
 class Complaint(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -77,6 +77,13 @@ def register():
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
             return "User already exists"
+        
+        if username == "admin":
+          role = "admin"
+        else:
+         role = "user"
+
+         user = User(username=username, password=password, role=role)
 
         try:
             # 🔐 HASH PASSWORD
