@@ -39,7 +39,8 @@ def load_user(user_id):
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
-    password = db.Column(db.String(200), nullable=False)
+    password = db.Column(db.String(50), nullable=False)
+    role = db.Column(db.String(20), default="user")  # NEW
 
 class Complaint(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -79,6 +80,8 @@ def register():
             hashed_password = generate_password_hash(password)
 
             user = User(username=username, password=hashed_password)
+
+            # 👇 ADD THIS
             db.session.add(user)
             db.session.commit()
 
@@ -146,6 +149,10 @@ def submit():
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    if current_user.role != "admin":
+        return "Access Denied"
+
+    complaints = Complaint.query.all()
     # 🔥 ONLY USER DATA
     complaints = Complaint.query.filter_by(user_id=current_user.id).all()
 
@@ -185,9 +192,11 @@ def dashboard():
 @app.route('/update_status/<int:id>/<status>')
 @login_required
 def update_status(id, status):
-    complaint = Complaint.query.get(id)
+    if current_user.role != "admin":
+     return "Access Denied"
 
-    if complaint and complaint.user_id == current_user.id:
+    complaint = Complaint.query.get(id)
+    if complaint:
         complaint.status = status
         db.session.commit()
 
@@ -197,9 +206,11 @@ def update_status(id, status):
 @app.route('/delete/<int:id>')
 @login_required
 def delete_complaint(id):
-    complaint = Complaint.query.get(id)
+    if current_user.role != "admin":
+        return "Access Denied"
 
-    if complaint and complaint.user_id == current_user.id:
+    complaint = Complaint.query.get(id)
+    if complaint:
         db.session.delete(complaint)
         db.session.commit()
 

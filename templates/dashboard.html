@@ -95,6 +95,10 @@
 
 <div class="container">
 
+    {% if current_user.role != 'admin' %}
+<p style="color: gray;">👁 You are viewing complaints (read-only)</p>
+{% endif %}
+
     <!-- MAP -->
     <div id="map"></div>
 
@@ -129,15 +133,14 @@
 
         <br><br>
 
-        <div class="actions">
-            <a href="/update_status/{{ c.id }}/Pending">🟡 Pending</a>
-            <a href="/update_status/{{ c.id }}/In Progress">🔵 Progress</a>
-            <a href="/update_status/{{ c.id }}/Resolved">🟢 Resolved</a>
-            <a href="/delete/{{ c.id }}" class="delete">❌ Delete</a>
-        </div>
-
-    </div>
-    {% endfor %}
+        {% if current_user.role == 'admin' %}
+<div class="actions">
+    <a href="/update_status/{{ c.id }}/Pending">🟡 Pending</a>
+    <a href="/update_status/{{ c.id }}/In Progress">🔵 Progress</a>
+    <a href="/update_status/{{ c.id }}/Resolved">🟢 Resolved</a>
+    <a href="/delete/{{ c.id }}" class="delete">❌ Delete</a>
+</div>
+{% endif %}
 
 </div>
 
