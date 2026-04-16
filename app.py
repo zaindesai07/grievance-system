@@ -1,3 +1,5 @@
+
+
 from flask import Flask, render_template, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 import os
@@ -15,6 +17,7 @@ app.secret_key = "secret123"
 # ---------------- DATABASE ----------------
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(os.getcwd(), 'database.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['PROPAGATE_EXCEPTIONS'] = True
 
 db = SQLAlchemy(app)
 
@@ -149,11 +152,7 @@ def submit():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    
-
     complaints = Complaint.query.all()
-    # 🔥 ONLY USER DATA
-    complaints = Complaint.query.filter_by(user_id=current_user.id).all()
 
     complaints_data = []
 
@@ -166,9 +165,9 @@ def dashboard():
         complaints_data.append({
             "id": c.id,
             "description": c.description,
-            "location": c.location,
-            "status": c.status,
-            "image": c.image
+            "location": c.location if c.location else "",
+            "status": c.status if c.status else "Pending",
+            "image": c.image if c.image else ""
         })
 
         if c.status == "Pending":

@@ -3,9 +3,8 @@
 <head>
     <title>Dashboard</title>
 
-    <!-- Leaflet -->
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
     <style>
         body {
@@ -96,8 +95,8 @@
 <div class="container">
 
     {% if current_user.role != 'admin' %}
-<p style="color: gray;">👁 You are viewing complaints (read-only)</p>
-{% endif %}
+    <p style="color: gray;">👁 You are viewing complaints (read-only)</p>
+    {% endif %}
 
     <!-- MAP -->
     <div id="map"></div>
@@ -110,7 +109,7 @@
         <div class="card-box resolved">Resolved<br>{{ resolved }}</div>
     </div>
 
-    <!-- COMPLAINTS -->
+    <!-- COMPLAINT LIST -->
     {% for c in complaints %}
     <div class="complaint">
 
@@ -131,20 +130,23 @@
             <img src="{{ c.image }}">
         {% endif %}
 
-        <br><br>
-
         {% if current_user.role == 'admin' %}
-<div class="actions">
-    <a href="/update_status/{{ c.id }}/Pending">🟡 Pending</a>
-    <a href="/update_status/{{ c.id }}/In Progress">🔵 Progress</a>
-    <a href="/update_status/{{ c.id }}/Resolved">🟢 Resolved</a>
-    <a href="/delete/{{ c.id }}" class="delete">❌ Delete</a>
-</div>
-{% endif %}
+        <div class="actions">
+            <a href="/update_status/{{ c.id }}/Pending">🟡 Pending</a>
+            <a href="/update_status/{{ c.id }}/In Progress">🔵 Progress</a>
+            <a href="/update_status/{{ c.id }}/Resolved">🟢 Resolved</a>
+            <a href="/delete/{{ c.id }}" class="delete">❌ Delete</a>
+        </div>
+        {% endif %}
+
+    </div>
+    {% endfor %}
 
 </div>
 
-<!-- MAP SCRIPT -->
+<!-- Leaflet JS (LOAD AFTER HTML) -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
 <script>
     var map = L.map('map').setView([19.0760, 72.8777], 12);
 
@@ -152,17 +154,16 @@
         attribution: "© OpenStreetMap"
     }).addTo(map);
 
-    // FIXED VERSION (NO ERRORS)
     var complaints = JSON.parse('{{ complaints | tojson | safe }}');
 
     complaints.forEach(function(c) {
-        if (c.location) {
+        if (c.location && c.location.includes(",")) {
             var coords = c.location.split(",");
 
-            if (coords.length === 2) {
-                var lat = parseFloat(coords[0]);
-                var lng = parseFloat(coords[1]);
+            var lat = parseFloat(coords[0]);
+            var lng = parseFloat(coords[1]);
 
+            if (!isNaN(lat) && !isNaN(lng)) {
                 L.marker([lat, lng]).addTo(map)
                     .bindPopup("<b>" + c.description + "</b>");
             }
