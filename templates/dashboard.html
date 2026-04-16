@@ -3,6 +3,10 @@
 <head>
     <title>Dashboard</title>
 
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
     <style>
         body {
             font-family: Arial;
@@ -20,6 +24,12 @@
 
         .container {
             padding: 20px;
+        }
+
+        #map {
+            height: 300px;
+            border-radius: 10px;
+            margin-bottom: 20px;
         }
 
         .stats {
@@ -85,6 +95,9 @@
 
 <div class="container">
 
+    <!-- MAP -->
+    <div id="map"></div>
+
     <!-- STATS -->
     <div class="stats">
         <div class="card-box total">Total<br>{{ total }}</div>
@@ -100,9 +113,7 @@
         <p><b>Description:</b> {{ c.description }}</p>
         <p><b>Location:</b> {{ c.location }}</p>
 
-        <p>
-            <b>Status:</b>
-
+        <p><b>Status:</b>
             {% if c.status == 'Pending' %}
                 <span class="status pending-status">Pending</span>
             {% elif c.status == 'In Progress' %}
@@ -118,7 +129,6 @@
 
         <br><br>
 
-        <!-- ACTION BUTTONS -->
         <div class="actions">
             <a href="/update_status/{{ c.id }}/Pending">🟡 Pending</a>
             <a href="/update_status/{{ c.id }}/In Progress">🔵 Progress</a>
@@ -130,6 +140,32 @@
     {% endfor %}
 
 </div>
+
+<!-- MAP SCRIPT -->
+<script>
+    var map = L.map('map').setView([19.0760, 72.8777], 12);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: "© OpenStreetMap"
+    }).addTo(map);
+
+    // FIXED VERSION (NO ERRORS)
+    var complaints = JSON.parse('{{ complaints | tojson | safe }}');
+
+    complaints.forEach(function(c) {
+        if (c.location) {
+            var coords = c.location.split(",");
+
+            if (coords.length === 2) {
+                var lat = parseFloat(coords[0]);
+                var lng = parseFloat(coords[1]);
+
+                L.marker([lat, lng]).addTo(map)
+                    .bindPopup("<b>" + c.description + "</b>");
+            }
+        }
+    });
+</script>
 
 </body>
 </html>
