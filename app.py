@@ -149,8 +149,7 @@ def submit():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    if current_user.role != "admin":
-        return "Access Denied"
+    
 
     complaints = Complaint.query.all()
     # 🔥 ONLY USER DATA
