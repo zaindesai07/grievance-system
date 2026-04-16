@@ -33,6 +33,8 @@
             padding: 15px;
             border-radius: 10px;
             color: white;
+            text-align: center;
+            font-weight: bold;
         }
 
         .total { background: #6366f1; }
@@ -48,18 +50,23 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
-        .btn {
-            padding: 6px 10px;
-            border: none;
+        .status {
+            padding: 5px 10px;
             border-radius: 5px;
-            cursor: pointer;
-            margin-right: 5px;
+            color: white;
         }
 
-        .pending-btn { background: orange; color: white; }
-        .progress-btn { background: blue; color: white; }
-        .resolved-btn { background: green; color: white; }
-        .delete-btn { background: red; color: white; }
+        .pending-status { background: orange; }
+        .progress-status { background: blue; }
+        .resolved-status { background: green; }
+
+        .actions a {
+            margin-right: 10px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .delete { color: red; }
 
         img {
             max-width: 200px;
@@ -80,40 +87,45 @@
 
     <!-- STATS -->
     <div class="stats">
-        <div class="card-box total">Total: {{ total }}</div>
-        <div class="card-box pending">Pending: {{ pending }}</div>
-        <div class="card-box progress">In Progress: {{ progress }}</div>
-        <div class="card-box resolved">Resolved: {{ resolved }}</div>
+        <div class="card-box total">Total<br>{{ total }}</div>
+        <div class="card-box pending">Pending<br>{{ pending }}</div>
+        <div class="card-box progress">In Progress<br>{{ progress }}</div>
+        <div class="card-box resolved">Resolved<br>{{ resolved }}</div>
     </div>
 
     <!-- COMPLAINTS -->
     {% for c in complaints %}
     <div class="complaint">
-        <b>Description:</b> {{ c.description }} <br>
-        <b>Location:</b> {{ c.location }} <br>
-        <b>Status:</b> {{ c.status }}
+
+        <p><b>Description:</b> {{ c.description }}</p>
+        <p><b>Location:</b> {{ c.location }}</p>
+
+        <p>
+            <b>Status:</b>
+
+            {% if c.status == 'Pending' %}
+                <span class="status pending-status">Pending</span>
+            {% elif c.status == 'In Progress' %}
+                <span class="status progress-status">In Progress</span>
+            {% else %}
+                <span class="status resolved-status">Resolved</span>
+            {% endif %}
+        </p>
 
         {% if c.image %}
-        <br><img src="{{ c.image }}">
+            <img src="{{ c.image }}">
         {% endif %}
 
         <br><br>
 
-        <a href="/update_status/{{ c.id }}/Pending">
-            <button class="btn pending-btn">Pending</button>
-        </a>
+        <!-- ACTION BUTTONS -->
+        <div class="actions">
+            <a href="/update_status/{{ c.id }}/Pending">🟡 Pending</a>
+            <a href="/update_status/{{ c.id }}/In Progress">🔵 Progress</a>
+            <a href="/update_status/{{ c.id }}/Resolved">🟢 Resolved</a>
+            <a href="/delete/{{ c.id }}" class="delete">❌ Delete</a>
+        </div>
 
-        <a href="/update_status/{{ c.id }}/In Progress">
-            <button class="btn progress-btn">Progress</button>
-        </a>
-
-        <a href="/update_status/{{ c.id }}/Resolved">
-            <button class="btn resolved-btn">Resolved</button>
-        </a>
-
-        <a href="/delete/{{ c.id }}">
-            <button class="btn delete-btn">Delete</button>
-        </a>
     </div>
     {% endfor %}
 
