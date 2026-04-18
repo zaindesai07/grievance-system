@@ -226,6 +226,12 @@ def initdb():
     db.create_all()
     return "Database created!"
 
+@app.route('/initdb')
+def initdb():
+    db.drop_all()   # 🔥 ADD THIS
+    db.create_all()
+    return "Database reset!"
+
 # ---------------- RUN ----------------
 if __name__ == '__main__':
     with app.app_context():
