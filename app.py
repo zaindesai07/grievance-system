@@ -43,7 +43,7 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(50), nullable=False)
-    role = db.Column(db.String(20), default="user")   # ✅ ADD THIS
+    role = db.Column(db.String(20), default="user")   # ✅ MUST BE HERE
 
 class Complaint(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -79,13 +79,12 @@ def register():
             return "User already exists"
         
         if username == "admin":
-          role = "admin"
-        else:
-         role = "user"
+         role = "admin"
+    else:
+      role = "user"
 
-         user = User(username=username, password=password, role=role)
-
-        try:
+      user = User(username=username, password=password, role=role)
+    try:
             # 🔐 HASH PASSWORD
             hashed_password = generate_password_hash(password)
 
@@ -99,7 +98,7 @@ def register():
             login_user(user)
             return redirect('/')
 
-        except Exception as e:
+    except Exception as e:
             return f"Error: {str(e)}"
 
     return render_template('register.html')
@@ -198,7 +197,7 @@ def dashboard():
 @login_required
 def update_status(id, status):
     if current_user.role != "admin":
-     return "Access Denied"
+        return "Access Denied"
 
     complaint = Complaint.query.get(id)
     if complaint:
