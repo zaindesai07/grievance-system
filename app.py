@@ -18,6 +18,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+with app.app_context():
+    db.create_all()
+
 # ---------------- CLOUDINARY ----------------
 cloudinary.config(
     cloud_name="drwksgzy5",
@@ -140,7 +143,10 @@ def submit():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    complaints = Complaint.query.all()
+    try:
+        complaints = Complaint.query.all()
+    except Exception as e:
+        return f"Database Error: {str(e)}"
 
     total = len(complaints)
     pending = sum(1 for c in complaints if c.status == "Pending")
