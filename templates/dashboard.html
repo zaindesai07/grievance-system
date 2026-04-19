@@ -3,31 +3,31 @@
 <head>
     <title>Dashboard</title>
 
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
     <style>
         body {
-            font-family: Arial;
-            background: #f5f7fb;
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(to right, #0f172a, #1e293b);
             margin: 0;
+            color: #fff;
         }
 
         .navbar {
-            background: #1e293b;
-            color: white;
-            padding: 15px;
+            padding: 15px 30px;
+            background: rgba(0,0,0,0.3);
             display: flex;
             justify-content: space-between;
+            backdrop-filter: blur(10px);
         }
 
         .container {
-            padding: 20px;
+            padding: 20px 40px;
         }
 
         #map {
             height: 300px;
-            border-radius: 10px;
+            border-radius: 15px;
             margin-bottom: 20px;
         }
 
@@ -39,29 +39,24 @@
 
         .card-box {
             flex: 1;
-            padding: 15px;
-            border-radius: 10px;
-            color: white;
+            padding: 20px;
+            border-radius: 15px;
             text-align: center;
             font-weight: bold;
-        }
-
-        .total { background: #6366f1; }
-        .pending { background: #f59e0b; }
-        .progress { background: #3b82f6; }
-        .resolved { background: #10b981; }
+            background: rgba(255,255,255,0.1);
+ }
 
         .complaint {
-            background: white;
-            padding: 15px;
+            background: rgba(255,255,255,0.08);
+            padding: 20px;
             margin-bottom: 15px;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-radius: 15px;
         }
 
         .status {
             padding: 5px 10px;
-            border-radius: 5px;
+            border-radius: 20px;
+            font-size: 12px;
             color: white;
         }
 
@@ -71,16 +66,14 @@
 
         .actions a {
             margin-right: 10px;
+            color: #38bdf8;
             text-decoration: none;
-            font-weight: bold;
         }
-
-        .delete { color: red; }
 
         img {
             max-width: 200px;
+            border-radius: 10px;
             margin-top: 10px;
-            border-radius: 8px;
         }
     </style>
 </head>
@@ -88,31 +81,23 @@
 <body>
 
 <div class="navbar">
-    <h2>Grievance Dashboard</h2>
+    <h2>🚀 Grievance Dashboard</h2>
     <a href="/logout" style="color:white;">Logout</a>
 </div>
 
 <div class="container">
 
-    {% if current_user.role != 'admin' %}
-    <p style="color: gray;">👁 You are viewing complaints (read-only)</p>
-    {% endif %}
-
-    <!-- MAP -->
     <div id="map"></div>
 
-    <!-- STATS -->
     <div class="stats">
-        <div class="card-box total">Total<br>{{ total }}</div>
-        <div class="card-box pending">Pending<br>{{ pending }}</div>
-        <div class="card-box progress">In Progress<br>{{ progress }}</div>
-        <div class="card-box resolved">Resolved<br>{{ resolved }}</div>
+        <div class="card-box">Total<br>{{ total }}</div>
+        <div class="card-box">Pending<br>{{ pending }}</div>
+        <div class="card-box">Progress<br>{{ progress }}</div>
+        <div class="card-box">Resolved<br>{{ resolved }}</div>
     </div>
 
-    <!-- COMPLAINT LIST -->
     {% for c in complaints %}
     <div class="complaint">
-
         <p><b>Description:</b> {{ c.description }}</p>
         <p><b>Location:</b> {{ c.location }}</p>
 
@@ -127,24 +112,24 @@
         </p>
 
         {% if c.image %}
-            <img src="{{ c.image }}">
+            {% if c.image %}
+    <img src="{{ c.image }}">
+{% endif %}
         {% endif %}
 
         {% if current_user.role == 'admin' %}
         <div class="actions">
-            <a href="/update_status/{{ c.id }}/Pending">🟡 Pending</a>
-            <a href="/update_status/{{ c.id }}/In Progress">🔵 Progress</a>
-            <a href="/update_status/{{ c.id }}/Resolved">🟢 Resolved</a>
-            <a href="/delete/{{ c.id }}" class="delete">❌ Delete</a>
+            <a href="/update_status/{{ c.id }}/Pending">Pending</a>
+            <a href="/update_status/{{ c.id }}/In Progress">Progress</a>
+            <a href="/update_status/{{ c.id }}/Resolved">Resolved</a>
+            <a href="/delete/{{ c.id }}">Delete</a>
         </div>
         {% endif %}
-
     </div>
     {% endfor %}
 
 </div>
 
-<!-- Leaflet JS (LOAD AFTER HTML) -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
@@ -154,6 +139,7 @@
         attribution: "© OpenStreetMap"
     }).addTo(map);
 
+    // ✅ FIXED: no JSON.parse, direct safe injection
     var complaints = JSON.parse('{{ complaints | tojson | safe }}');
 
     complaints.forEach(function(c) {

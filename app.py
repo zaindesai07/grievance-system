@@ -143,19 +143,27 @@ def submit():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    try:
-        complaints = Complaint.query.all()
-    except Exception as e:
-        return f"Database Error: {str(e)}"
+    complaints = Complaint.query.all()
 
-    total = len(complaints)
-    pending = sum(1 for c in complaints if c.status == "Pending")
-    progress = sum(1 for c in complaints if c.status == "In Progress")
-    resolved = sum(1 for c in complaints if c.status == "Resolved")
+    # ✅ convert to safe JSON
+    complaints_data = []
+    for c in complaints:
+        complaints_data.append({
+            "id": c.id,
+            "description": c.description,
+            "location": c.location or "",
+            "status": c.status or "Pending",
+            "image": c.image or ""
+        })
+
+    total = len(complaints_data)
+    pending = sum(1 for c in complaints_data if c["status"] == "Pending")
+    progress = sum(1 for c in complaints_data if c["status"] == "In Progress")
+    resolved = sum(1 for c in complaints_data if c["status"] == "Resolved")
 
     return render_template(
         'dashboard.html',
-        complaints=complaints,
+        complaints=complaints_data,   # ✅ send safe data
         total=total,
         pending=pending,
         progress=progress,
