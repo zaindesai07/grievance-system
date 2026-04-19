@@ -187,12 +187,11 @@ def delete_complaint(id):
 # ---------------- RESET DB ----------------
 @app.route('/initdb')
 def initdb():
-    db.drop_all()
     db.create_all()
-    return "Database Reset Done!"
+    return "Database created!"
 
 # ---------------- RUN ----------------
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=10000)
