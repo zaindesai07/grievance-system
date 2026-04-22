@@ -170,6 +170,30 @@ def dashboard():
         resolved=resolved
     )
 
+# ---------------- ADMIN DASHBOARD ----------------
+
+@app.route('/admin')
+@login_required
+def admin_dashboard():
+    if current_user.role != "admin":
+        return "Access Denied"
+
+    complaints = Complaint.query.order_by(Complaint.id.desc()).all()
+
+    total = len(complaints)
+    pending = sum(1 for c in complaints if c.status == "Pending")
+    progress = sum(1 for c in complaints if c.status == "In Progress")
+    resolved = sum(1 for c in complaints if c.status == "Resolved")
+
+    return render_template(
+        'admin.html',
+        complaints=complaints,
+        total=total,
+        pending=pending,
+        progress=progress,
+        resolved=resolved
+    )
+
 # ---------------- UPDATE STATUS ----------------
 @app.route('/update_status/<int:id>/<status>')
 @login_required
