@@ -51,7 +51,16 @@ class Complaint(db.Model):
     image = db.Column(db.String(200))
     status = db.Column(db.String(50), default="Pending")
 
+    votes = db.Column(db.Integer, default=0)   # ✅ ADD HERE
+
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+# ---------------- VOTE MODEL----------------    
+
+class Vote(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer)
+    complaint_id = db.Column(db.Integer)
 
 # ---------------- HOME ----------------
 @app.route('/')
@@ -225,8 +234,12 @@ def delete_complaint(id):
 # ---------------- RESET DB ----------------
 @app.route('/initdb')
 def initdb():
-    db.create_all()
-    return "Database created!"
+    try:
+        db.drop_all()
+        db.create_all()
+        return "Database Reset Done!"
+    except Exception as e:
+        return f"Error: {str(e)}"
 
 # ---------------- RUN ----------------
 if __name__ == '__main__':
