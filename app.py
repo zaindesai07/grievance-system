@@ -3,7 +3,6 @@ from flask_sqlalchemy import SQLAlchemy
 import os
 
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-
 from werkzeug.security import generate_password_hash, check_password_hash
 
 import cloudinary
@@ -13,13 +12,13 @@ app = Flask(__name__)
 app.secret_key = "secret123"
 
 # ---------------- DATABASE ----------------
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(os.getcwd(), 'database.db')
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+db_path = os.path.join(BASE_DIR, 'database.db')
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_path
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
-
-with app.app_context():
-    db.create_all()
 
 # ---------------- CLOUDINARY ----------------
 cloudinary.config(
@@ -41,7 +40,7 @@ def load_user(user_id):
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
-    password = db.Column(db.String(200), nullable=False)  # 🔥 FIXED LENGTH
+    password = db.Column(db.String(200), nullable=False)
     role = db.Column(db.String(20), default="user")
 
 class Complaint(db.Model):
@@ -50,12 +49,9 @@ class Complaint(db.Model):
     location = db.Column(db.String(100))
     image = db.Column(db.String(200))
     status = db.Column(db.String(50), default="Pending")
-
-    votes = db.Column(db.Integer, default=0)   # ✅ ADD HERE
+    votes = db.Column(db.Integer, default=0)
 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-
-# ---------------- VOTE MODEL----------------    
 
 class Vote(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -79,17 +75,13 @@ def register():
         if not username or not password:
             return "Fill all fields"
 
-        existing_user = User.query.filter_by(username=username).first()
-        if existing_user:
+        if User.query.filter_by(username=username).first():
             return "User already exists"
 
-        # 🔥 ADMIN LOGIC
         role = "admin" if username == "admin" else "user"
+        hashed = generate_password_hash(password)
 
-        hashed_password = generate_password_hash(password)
-
-        user = User(username=username, password=hashed_password, role=role)
-
+        user = User(username=username, password=hashed, role=role)
         db.session.add(user)
         db.session.commit()
 
@@ -107,8 +99,7 @@ def login():
         if user and check_password_hash(user.password, request.form.get('password')):
             login_user(user)
             return redirect('/')
-        else:
-            return "Invalid credentials"
+        return "Invalid credentials"
 
     return render_template('login.html')
 
@@ -136,72 +127,56 @@ def submit():
         except:
             image_url = None
 
-    new_complaint = Complaint(
+    complaint = Complaint(
         description=desc,
         location=location,
         image=image_url,
         user_id=current_user.id
     )
 
-    db.session.add(new_complaint)
+    db.session.add(complaint)
     db.session.commit()
 
-    return redirect('/')
+    return redirect('/dashboard')
+
+# ---------------- UPVOTE ----------------
+@app.route('/upvote/<int:id>')
+@login_required
+def upvote(id):
+    existing = Vote.query.filter_by(
+        user_id=current_user.id,
+        complaint_id=id
+    ).first()
+
+    if existing:
+        return redirect('/dashboard')
+
+    vote = Vote(user_id=current_user.id, complaint_id=id)
+    db.session.add(vote)
+
+    complaint = Complaint.query.get(id)
+    if complaint:
+        complaint.votes += 1
+
+    db.session.commit()
+    return redirect('/dashboard')
 
 # ---------------- DASHBOARD ----------------
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    complaints = Complaint.query.all()
+    complaints = Complaint.query.order_by(Complaint.votes.desc()).all()
+    return render_template('dashboard.html', complaints=complaints)
 
-    # ✅ convert to safe JSON
-    complaints_data = []
-    for c in complaints:
-        complaints_data.append({
-            "id": c.id,
-            "description": c.description,
-            "location": c.location or "",
-            "status": c.status or "Pending",
-            "image": c.image or ""
-        })
-
-    total = len(complaints_data)
-    pending = sum(1 for c in complaints_data if c["status"] == "Pending")
-    progress = sum(1 for c in complaints_data if c["status"] == "In Progress")
-    resolved = sum(1 for c in complaints_data if c["status"] == "Resolved")
-
-    return render_template(
-        'dashboard.html',
-        complaints=complaints_data,   # ✅ send safe data
-        total=total,
-        pending=pending,
-        progress=progress,
-        resolved=resolved
-    )
-
-# ---------------- ADMIN DASHBOARD ----------------
-
+# ---------------- ADMIN ----------------
 @app.route('/admin')
 @login_required
 def admin_dashboard():
     if current_user.role != "admin":
         return "Access Denied"
 
-    complaints = Complaint.query.order_by(Complaint.id.desc()).all()
-
-    total = len(complaints)
-    pending = sum(1 for c in complaints if c.status == "Pending")
-    progress = sum(1 for c in complaints if c.status == "In Progress")
-    resolved = sum(1 for c in complaints if c.status == "Resolved")
-
-    return render_template(
-        'admin.html',
-        complaints=complaints,
-        total=total,
-        pending=pending,
-        progress=progress,
-        resolved=resolved
-    )
+    complaints = Complaint.query.all()
+    return render_template('admin.html', complaints=complaints)
 
 # ---------------- UPDATE STATUS ----------------
 @app.route('/update_status/<int:id>/<status>')
@@ -215,12 +190,12 @@ def update_status(id, status):
         complaint.status = status
         db.session.commit()
 
-    return redirect('/dashboard')
+    return redirect('/admin')
 
 # ---------------- DELETE ----------------
 @app.route('/delete/<int:id>')
 @login_required
-def delete_complaint(id):
+def delete(id):
     if current_user.role != "admin":
         return "Access Denied"
 
@@ -229,20 +204,17 @@ def delete_complaint(id):
         db.session.delete(complaint)
         db.session.commit()
 
-    return redirect('/dashboard')
+    return redirect('/admin')
 
 # ---------------- RESET DB ----------------
 @app.route('/initdb')
 def initdb():
-    try:
-        db.drop_all()
-        db.create_all()
-        return "Database Reset Done!"
-    except Exception as e:
-        return f"Error: {str(e)}"
+    db.drop_all()
+    db.create_all()
+    return "Database Reset Done!"
 
 # ---------------- RUN ----------------
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(host="0.0.0.0", port=10000)
+    app.run(debug=True)

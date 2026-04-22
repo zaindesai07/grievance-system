@@ -123,6 +123,17 @@
             <a href="/update_status/{{ c.id }}/In Progress">Progress</a>
             <a href="/update_status/{{ c.id }}/Resolved">Resolved</a>
             <a href="/delete/{{ c.id }}">Delete</a>
+            <a href="/upvote/{{ c.id }}" style="
+background:#22c55e;
+padding:6px 12px;
+border-radius:8px;
+color:white;
+text-decoration:none;
+">
+👍 {{ c.votes }}
+</a>
+
+        
         </div>
         {% endif %}
     </div>
