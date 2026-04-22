@@ -114,30 +114,38 @@ def logout():
 @app.route('/submit', methods=['POST'])
 @login_required
 def submit():
-    desc = request.form.get('description')
-    location = request.form.get('location')
+    try:
+        desc = request.form.get('description')
+        location = request.form.get('location')
 
-    image_url = None
-    file = request.files.get('image')
+        image_url = None
+        file = request.files.get('image')
 
-    if file and file.filename != "":
-        try:
-            result = cloudinary.uploader.upload(file)
-            image_url = result['secure_url']
-        except:
-            image_url = None
+        # 🔥 SAFE CLOUDINARY UPLOAD
+        if file and file.filename != "":
+            try:
+                result = cloudinary.uploader.upload(file)
+                image_url = result.get('secure_url')
+            except Exception as e:
+                print("Cloudinary Error:", e)
+                image_url = None
 
-    complaint = Complaint(
-        description=desc,
-        location=location,
-        image=image_url,
-        user_id=current_user.id
-    )
+        complaint = Complaint(
+            description=desc,
+            location=location,
+            image=image_url,
+            user_id=current_user.id,
+            votes=0   # ✅ IMPORTANT
+        )
 
-    db.session.add(complaint)
-    db.session.commit()
+        db.session.add(complaint)
+        db.session.commit()
 
-    return redirect('/dashboard')
+        return redirect('/dashboard')
+
+    except Exception as e:
+        print("SUBMIT ERROR:", e)
+        return f"Error: {str(e)}"
 
 # ---------------- UPVOTE ----------------
 @app.route('/upvote/<int:id>')
